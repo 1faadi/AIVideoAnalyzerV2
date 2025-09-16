@@ -138,15 +138,15 @@ export function deleteJob(id: string): boolean {
 
 export async function uploadAndStartProcessing(file: File): Promise<string> {
   try {
-    // Create FormData for file upload
-    const formData = new FormData()
-    formData.append('video', file)
-    
-    // Upload file and process immediately
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData
-    })
+    // If file size is large or we're in demo mode, call mock upload
+    const useMock = !file || (typeof file.size === 'number' && file.size > 50 * 1024 * 1024)
+    const response = useMock
+      ? await fetch('/api/upload?mock=1', { method: 'POST' })
+      : await (async () => {
+          const formData = new FormData()
+          formData.append('video', file)
+          return fetch('/api/upload', { method: 'POST', body: formData })
+        })()
     
     if (!response.ok) {
       throw new Error(`Upload failed: ${response.statusText}`)

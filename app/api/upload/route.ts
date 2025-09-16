@@ -11,6 +11,17 @@ export async function POST(request: NextRequest) {
   try {
     console.log("[v0] Upload API called")
 
+    // MOCK MODE: allow upload without file to simulate flow and use cached dataset
+    const { searchParams } = new URL(request.url)
+    const isMock = searchParams.get("mock") === "1"
+
+    if (isMock) {
+      const jobId = createJob("mock_video.mp4")
+      updateJobStatus(jobId, 'pending')
+      console.log("[v0] Mock upload: created job", jobId)
+      return NextResponse.json({ success: true, jobId, message: "Mock upload accepted" })
+    }
+
     const formData = await request.formData()
     const file = formData.get("video") as File
 
