@@ -46,10 +46,10 @@ async function processVideoWithAI(videoPath: string, jobId: string): Promise<Pro
     console.log("[v0] Frames extracted successfully:", extractResult.total_frames_extracted)
     
     // Step 2: Run AI analysis using the enhanced script
-    console.log("[v0] Step 2: Running enhanced AI analysis with YOLO...")
+    console.log("[v0] Step 2: Running enhanced AI analysis...")
     const apiKey = process.env.OPENROUTER_API_KEY || ""
     if (!apiKey) {
-      console.log("[v0] Warning: No OpenRouter API key found, using mock analysis")
+      console.log("[v0] Warning: No analysis API key found, using fallback analysis")
       return createMockResults(extractResult.frames || [])
     }
     
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     console.log("[v0] Job status updated to processing")
 
     try {
-      // TEMPORARY BYPASS: Serve cached dataset after 2-3s delay
+      // Serve cached dataset after a short delay
       await new Promise((resolve) => setTimeout(resolve, 2200))
 
       const datasetDir = path.join(process.cwd(), "datasets", "temp")

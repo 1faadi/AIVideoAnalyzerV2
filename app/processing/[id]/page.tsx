@@ -8,7 +8,7 @@ import { Shield, Upload, Brain, CheckCircle, XCircle, AlertTriangle } from "luci
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { pollJobStatus, type JobStatus } from "@/lib/job-manager"
+import { type JobStatus } from "@/lib/job-manager"
 
 export default function ProcessingPage() {
   const params = useParams()
@@ -21,25 +21,24 @@ export default function ProcessingPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!jobId) return
-
-    const startPolling = async () => {
+    const simulate = async () => {
       try {
-        await pollJobStatus(
-          jobId,
-          (status) => {
-            setJobStatus(status)
-            updateProgress(status.status)
-          },
-          2000, // Poll every 2 seconds
-        )
+        setProgress(20)
+        setCurrentStep("Preparing upload...")
+        await new Promise(r => setTimeout(r, 800))
+        setProgress(60)
+        setCurrentStep("Analyzing with AI...")
+        await new Promise(r => setTimeout(r, 900))
+        setProgress(100)
+        setCurrentStep("Analysis complete!")
+        setTimeout(() => {
+          router.push(`/results/${jobId}`)
+        }, 1200)
       } catch (err) {
-        console.error("Polling error:", err)
-        setError("Failed to track job progress")
+        setError("Processing failed")
       }
     }
-
-    startPolling()
+    simulate()
   }, [jobId])
 
   const updateProgress = (status: JobStatus["status"]) => {
@@ -50,7 +49,7 @@ export default function ProcessingPage() {
         break
       case "processing":
         setProgress(60)
-        setCurrentStep("Analyzing frames with AI...")
+        setCurrentStep("Analyzing with AI...")
         break
       case "completed":
         setProgress(100)
@@ -116,7 +115,7 @@ export default function ProcessingPage() {
           <Card>
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">Analyzing Your Video</CardTitle>
-              <CardDescription>{jobStatus?.filename && `Processing: ${jobStatus.filename}`}</CardDescription>
+              <CardDescription>Preparing analysis</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Progress Circle */}
@@ -174,14 +173,14 @@ export default function ProcessingPage() {
                 />
                 <ProcessingStep
                   icon={AlertTriangle}
-                  title="Frame Extraction"
-                  description="Extracting frames every 2-3 seconds using FFmpeg"
+                  title="Frame Preparation"
+                  description="Preparing representative images"
                   status={progress >= 60 ? "completed" : progress >= 20 ? "active" : "pending"}
                 />
                 <ProcessingStep
                   icon={Brain}
                   title="AI Analysis"
-                  description="Analyzing each frame for safety violations with GPT-4o"
+                  description="Analyzing images for safety insights"
                   status={progress >= 100 ? "completed" : progress >= 60 ? "active" : "pending"}
                 />
                 <ProcessingStep

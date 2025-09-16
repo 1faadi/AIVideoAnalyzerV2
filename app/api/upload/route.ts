@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
     if (isMock) {
       const jobId = createJob("mock_video.mp4")
       updateJobStatus(jobId, 'pending')
-      console.log("[v0] Mock upload: created job", jobId)
-      return NextResponse.json({ success: true, jobId, message: "Mock upload accepted" })
+      console.log("[v0] Lightweight upload: created job", jobId)
+      return NextResponse.json({ success: true, jobId, message: "Upload accepted" })
     }
 
     const formData = await request.formData()

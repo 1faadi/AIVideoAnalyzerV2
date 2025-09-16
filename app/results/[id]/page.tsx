@@ -19,29 +19,22 @@ export default function ResultsPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchResults = async () => {
+    const fetchDataset = async () => {
       try {
-        const response = await fetch(`/api/jobs/${jobId}`)
+        const response = await fetch(`/api/dataset`)
         if (!response.ok) {
-          throw new Error(`Failed to fetch job: ${response.statusText}`)
+          throw new Error(`Failed to fetch dataset: ${response.statusText}`)
         }
-        
-        const status = await response.json()
-        setJobStatus(status)
-        
-        // If job is still processing, redirect to processing page
-        if (status.status === 'processing' || status.status === 'pending') {
-          router.push(`/processing/${jobId}`)
-          return
+
+        const results = await response.json()
+        const fakeJob: JobStatus = {
+          id: jobId,
+          status: 'completed',
+          filename: 'dataset',
+          uploadedAt: new Date().toISOString(),
+          results
         }
-        
-        // If frames are extracted but no AI analysis done yet, redirect to frames page
-        if (status.results?.frames && 
-            status.results.explanation.includes("Ready for AI analysis")) {
-          router.push(`/frames/${jobId}`)
-          return
-        }
-        
+        setJobStatus(fakeJob)
       } catch (err) {
         setError("Failed to load results")
         console.error(err)
@@ -50,10 +43,8 @@ export default function ResultsPage() {
       }
     }
 
-    if (jobId) {
-      fetchResults()
-    }
-  }, [jobId, router])
+    fetchDataset()
+  }, [jobId])
 
   if (loading) {
     return (

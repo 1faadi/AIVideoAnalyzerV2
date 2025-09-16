@@ -21,7 +21,7 @@ except ImportError:
     print("Warning: scikit-image not available, using basic similarity detection", file=sys.stderr)
     HAS_SCIKIT_IMAGE = False
 
-# Try to import YOLO for object detection
+# Try to import vision detector for object detection
 try:
     import logging
     # Suppress YOLO startup messages to prevent JSON parsing issues
@@ -30,18 +30,18 @@ try:
     
     # Temporarily redirect stdout to stderr during YOLO import
     sys.stdout = sys.stderr
-    from ultralytics import YOLO
+    from ultralytics import YOLO as VisionDetector
     sys.stdout = original_stdout
     
     HAS_YOLO = True
-    print("YOLO is available for object detection", file=sys.stderr)
+    print("Vision detector is available for object detection", file=sys.stderr)
 except ImportError:
     sys.stdout = original_stdout
-    print("Warning: ultralytics not available, YOLO object detection disabled", file=sys.stderr)
+    print("Warning: ultralytics not available, object detection disabled", file=sys.stderr)
     HAS_YOLO = False
 except Exception as e:
     sys.stdout = original_stdout
-    print(f"Warning: YOLO import failed with error: {e}, object detection disabled", file=sys.stderr)
+    print(f"Warning: vision detector import failed with error: {e}, object detection disabled", file=sys.stderr)
     HAS_YOLO = False
 
 def detect_objects_with_yolo(image_path, confidence_threshold=0.10):
@@ -55,7 +55,7 @@ def detect_objects_with_yolo(image_path, confidence_threshold=0.10):
     try:
         detected_objects = []
         
-        # Try multiple YOLOv11 models for enhanced detection (15-20% better accuracy)
+        # Try multiple detector models for enhanced detection
         model_configs = [
             {"model": "yolo11n.pt", "name": "nano", "conf": confidence_threshold},
             {"model": "yolo11s.pt", "name": "small", "conf": confidence_threshold * 0.8},  # Even lower threshold
@@ -66,14 +66,14 @@ def detect_objects_with_yolo(image_path, confidence_threshold=0.10):
         
         for config in model_configs:
             try:
-                print(f"Running YOLO {config['name']} model with confidence {config['conf']:.2f}...", file=sys.stderr)
+                print(f"Running detector {config['name']} with confidence {config['conf']:.2f}...", file=sys.stderr)
                 # Suppress YOLO verbose output during model loading
                 import logging
                 logging.getLogger('ultralytics').setLevel(logging.ERROR)
                 
                 # Temporarily redirect stdout to stderr during model loading
                 sys.stdout = sys.stderr
-                model = YOLO(config["model"])
+                model = VisionDetector(config["model"])
                 sys.stdout = original_stdout
                 
                 # Run inference with lower confidence and higher IoU threshold for comprehensive detection
@@ -137,10 +137,10 @@ def detect_objects_with_yolo(image_path, confidence_threshold=0.10):
                                 }
                                 all_detections.append(detection)
                 
-                print(f"YOLO {config['name']} detected {len([d for d in all_detections if d['model_used'] == config['name']])} objects", file=sys.stderr)
+                print(f"Detector {config['name']} detected {len([d for d in all_detections if d['model_used'] == config['name']])} objects", file=sys.stderr)
                 
             except Exception as model_error:
-                print(f"Could not load YOLO {config['name']} model: {model_error}, trying next...", file=sys.stderr)
+                print(f"Could not load detector {config['name']}: {model_error}, trying next...", file=sys.stderr)
                 continue
         
         # Remove duplicate detections using distance-based filtering
@@ -848,12 +848,12 @@ def process_frames_in_batches(frames_data, api_key, batch_size=5, frames_dir=Non
     
     # Run YOLO detection on all frames first if available
     if HAS_YOLO and frames_dir:
-        print("Running YOLO object detection on all frames...", file=sys.stderr)
+        print("Running object detection on all frames...", file=sys.stderr)
         for frame_data in frames_data:
             frame_path = os.path.join(frames_dir, frame_data['filename'])
             yolo_detections = detect_objects_with_yolo(frame_path)
             all_yolo_detections.append(yolo_detections)
-            print(f"YOLO detected {len(yolo_detections)} objects in {frame_data['filename']}", file=sys.stderr)
+            print(f"Detector found {len(yolo_detections)} objects in {frame_data['filename']}", file=sys.stderr)
     else:
         # Create empty detections if YOLO not available
         all_yolo_detections = [[] for _ in frames_data]
@@ -887,7 +887,7 @@ def analyze_batch_with_openrouter(batch_frames, api_key, batch_num, start_frame_
     Analyze a single batch of frames with OpenRouter, enhanced with YOLO detection data
     """
     try:
-        # Prepare YOLO context if available
+        # Prepare detector context if available
         yolo_context = ""
         if yolo_detections and len(yolo_detections) > 0:
             yolo_summary = []
@@ -898,7 +898,7 @@ def analyze_batch_with_openrouter(batch_frames, api_key, batch_num, start_frame_
                     yolo_summary.append(detection_summary)
             
             if yolo_summary:
-                yolo_context = f"\n\nYOLO OBJECT DETECTION RESULTS:\n{chr(10).join(yolo_summary)}\n\nPlease cross-reference these YOLO detections with your visual analysis and provide comprehensive assessment."
+                yolo_context = f"\n\nOBJECT DETECTION RESULTS:\n{chr(10).join(yolo_summary)}\n\nPlease cross-reference these detections with your visual analysis and provide comprehensive assessment."
 
         messages = [
             {
@@ -1020,7 +1020,7 @@ Respond ONLY in strict JSON format:
                 "X-Title": "Warehouse Safety Inspector"
             },
             json={
-                "model": "openai/gpt-4o",
+                "model": "openai/vision-model",
                 "messages": messages,
                 "max_tokens": 2000,
                 "temperature": 0.1,
@@ -1163,7 +1163,7 @@ def analyze_frames_with_openrouter(frames_dir, api_key, job_id):
                 "unique_frames": len(unique_frame_files)
             }
         
-        print(f"Step 3: Processing {len(frames_data)} unique frames in batches with YOLO integration...", file=sys.stderr)
+        print(f"Step 3: Processing {len(frames_data)} unique frames in batches with detection integration...", file=sys.stderr)
         
         # Step 3: Process frames in smaller batches for efficiency with YOLO detection
         batch_size = min(3, max(1, len(frames_data) // 2))  # Dynamic batch size based on frame count
@@ -1224,7 +1224,7 @@ def analyze_frames_with_openrouter(frames_dir, api_key, job_id):
                             })
                             print(f"AI Grid cells '{grid_cells}' -> bbox: x={bbox_coords['x']:.3f}, y={bbox_coords['y']:.3f}, w={bbox_coords['w']:.3f}, h={bbox_coords['h']:.3f}", file=sys.stderr)
                 
-                # Add only CRITICAL YOLO-detected hazards as precise bounding boxes
+                # Add only CRITICAL detector hazards as precise bounding boxes
                 for yolo_obj in frame_yolo_detections:
                     bbox = yolo_obj['bbox']
                     
@@ -1280,7 +1280,7 @@ def analyze_frames_with_openrouter(frames_dir, api_key, job_id):
         
         combined_explanation = f"Comprehensive analysis of {len(frames_data)} unique frames using combined YOLO object detection and AI grid-based analysis (filtered from {len(frame_files)} total frames). " + "; ".join(all_explanations) if all_explanations else f"Analyzed {len(frames_data)} unique frames - no safety violations detected."
         
-        print(f"Analysis complete: {len(all_frame_details)} frames analyzed with {len(flat_yolo_detections)} YOLO detections", file=sys.stderr)
+        print(f"Analysis complete: {len(all_frame_details)} frames analyzed with {len(flat_yolo_detections)} detected objects", file=sys.stderr)
         
         # Calculate comprehensive statistics
         total_yolo_objects = len(flat_yolo_detections)
@@ -1312,7 +1312,7 @@ def analyze_frames_with_openrouter(frames_dir, api_key, job_id):
             "similarity_filtered": len(frame_files) - len(unique_frame_files),
             "yolo_detections": total_yolo_objects,
             "hazardous_objects": total_hazardous_objects,
-            "method": "Enhanced Detection (YOLO + AI Grid Analysis)",
+            "method": "Enhanced Detection (Vision + Grid Analysis)",
             "detection_methods": {
                 "yolo_available": HAS_YOLO,
                 "ai_grid_analysis": True,

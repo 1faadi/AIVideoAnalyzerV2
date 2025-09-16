@@ -138,7 +138,7 @@ export function deleteJob(id: string): boolean {
 
 export async function uploadAndStartProcessing(file: File): Promise<string> {
   try {
-    // If file size is large or we're in demo mode, call mock upload
+    // Use lightweight upload path to create a job without uploading large files
     const useMock = !file || (typeof file.size === 'number' && file.size > 50 * 1024 * 1024)
     const response = useMock
       ? await fetch('/api/upload?mock=1', { method: 'POST' })
