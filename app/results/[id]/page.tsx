@@ -286,6 +286,16 @@ export default function ResultsPage() {
                                 src={results.frames[index].imageUrl}
                                 alt={`Frame at ${frameDetail.timestamp}`}
                                 boundingBoxes={results.frames[index].boundingBoxes || []}
+                                location={{
+                                  address: "Warehouse Industrial Area"
+                                }}
+                                mapUrl={
+                                  // Frames 1,2,3,4,5,6,11 use the first map URL
+                                  [1, 2, 3, 4, 5, 6, 11].includes(frameDetail.frameIndex + 1)
+                                    ? "https://maps.app.goo.gl/dqsZAih8boEgXhXWA?g_st=iw"
+                                    // Frames 7,8,9,10,12 use the second map URL
+                                    : "https://maps.app.goo.gl/NX9NqvvKJvLzm2fbA?g_st=iw"
+                                }
                               />
                               {results.frames[index].boundingBoxes && results.frames[index].boundingBoxes.length > 0 && (
                                 <div className="space-y-3">

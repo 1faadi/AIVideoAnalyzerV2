@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { MapPin } from "lucide-react"
 
 interface BoundingBox {
   label: string
@@ -20,9 +21,15 @@ interface AnnotatedImageProps {
   src: string
   alt: string
   boundingBoxes: BoundingBox[]
+  location?: {
+    latitude?: number
+    longitude?: number
+    address?: string
+  }
+  mapUrl?: string
 }
 
-export function AnnotatedImage({ src, alt, boundingBoxes }: AnnotatedImageProps) {
+export function AnnotatedImage({ src, alt, boundingBoxes, location, mapUrl }: AnnotatedImageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
   const [imageLoaded, setImageLoaded] = useState(false)
@@ -135,28 +142,56 @@ export function AnnotatedImage({ src, alt, boundingBoxes }: AnnotatedImageProps)
     setImageLoaded(true)
   }
 
+  const getMapsUrl = () => {
+    // If a specific map URL is provided, use it
+    if (mapUrl) {
+      return mapUrl
+    }
+    
+    if (location?.latitude && location?.longitude) {
+      return `https://www.google.com/maps?q=${location.latitude},${location.longitude}`
+    } else if (location?.address) {
+      return `https://www.google.com/maps/search/${encodeURIComponent(location.address)}`
+    }
+    // Default to a generic warehouse/industrial area search if no specific location
+    return "https://www.google.com/maps/search/warehouse+industrial+area"
+  }
+
   return (
-    <div className="relative border border-border rounded-lg overflow-hidden bg-muted">
-      <img
-        ref={imageRef}
-        src={src || "/placeholder.svg"}
-        alt={alt}
-        onLoad={handleImageLoad}
-        className="w-full h-auto"
-        style={{ display: imageLoaded ? "block" : "none" }}
-      />
-      {imageLoaded && (
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 w-full h-auto"
-          style={{ maxWidth: "100%", height: "auto" }}
+    <div className="space-y-2">
+      <div className="relative border border-border rounded-lg overflow-hidden bg-muted">
+        <img
+          ref={imageRef}
+          src={src || "/placeholder.svg"}
+          alt={alt}
+          onLoad={handleImageLoad}
+          className="w-full h-auto"
+          style={{ display: imageLoaded ? "block" : "none" }}
         />
-      )}
-      {!imageLoaded && (
-        <div className="aspect-video flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      )}
+        {imageLoaded && (
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 w-full h-auto"
+            style={{ maxWidth: "100%", height: "auto" }}
+          />
+        )}
+        {!imageLoaded && (
+          <div className="aspect-video flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        )}
+      </div>
+      <div className="flex justify-center">
+        <a
+          href={getMapsUrl()}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors duration-200 border border-blue-200 hover:border-blue-300"
+        >
+          <MapPin className="w-4 h-4" />
+          Open in Maps
+        </a>
+      </div>
     </div>
   )
 }
